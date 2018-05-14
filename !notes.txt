@@ -1,0 +1,79 @@
+GpxMarker4Dem
+
+--input -i     DEM- oder IMG-Datei (Kachel)
+--outpath -o   Ausgabepfad, default '.'
+--symbol       Garmin-GPX-Symbol, default 'Waypoint', z.B. auch 'Circle with X'
+
+GPX-Dateiname
+Basename der Inputdatei + Idx x (3) + Idx y (3).gpx
+
+Info-Dateiname
+Basename der Inputdatei.txt
+
+mit Koordinatenangaben left/top für jede GPX-Datei
+
+
+
+<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
+<gpx xmlns="http://www.topografix.com/GPX/1/1" creator="MapSource 6.16.3" version="1.1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.topografix.com/GPX/1/1 http://www.topografix.com/GPX/1/1/gpx.xsd">
+<wpt lat="49.9998132884502" lon="13.0001346766949"><name>0000</name><sym>Waypoint</sym></wpt>
+<wpt lat="49.9998132884502" lon="13.0004122853279"><name>0100</name><sym>Waypoint</sym></wpt>
+<wpt lat="49.9998132884502" lon="13.000689893961"><name>0200</name><sym>Waypoint</sym></wpt>
+<wpt lat="49.9998132884502" lon="13.000967502594"><name>0300</name><sym>Waypoint</sym></wpt>
+...
+<wpt lat="49.9823239445686" lon="13.0176240205765"><name>6363</name><sym>Waypoint</sym></wpt>
+</gpx>
+
+
+
+Gelegentlich gibt es bei der Darstellung des Shadings offensichtlich Fehler. Ich hatte auch in der PDF-Datei schon darauf hingewiesen.
+
+Für mich steht fest, dass in der DEM-Datei ausschließlich die Höhenwerte im angegebenen Raster enthalten sind. Auch wenn die Codierung noch 
+nicht vollständig entschlüsselt ist (zumindestens für shrink > 1) ist einfach kein Platz für andere größere Datenmengen, insbesondere nicht
+für Shadings-Bitmaps. Daraus folgt für mich, dass das Shading von Mapsource/Basecamp/GPS-Gerät immer "on the fly" berechnet wird. 
+Beim GPS-Gerät sieht man auch sehr gut, dass das Shading nachträglich über die fertige Karte gelegt wird. Die Berechnung dauert offentlich 
+einige Zeit.
+
+Als Ursache der Darstellungsfehler kommen damit 2 Möglichkeiten in Frage:
+1. Fehler bei der Codierung der Höhendaten, d.h. Mapsource/Basecamp holen sich aus der DEM-Datei falsche/unsinnige Werte und berechnet
+   damit natürlich ein unsinniges Shading.
+2. Fehler bei der Berechnung des Shadings mit korrekt aus der DEM-Datei geholten Werten.
+
+Im 1. Fall heißt es natürlich: Fehlersuche im Codier-Algorithmus.
+
+Im 2. Fall könnte man sich nur Garmin beschweren und eine Korrektur des Shadings verlangen :)
+Man könnte auch selbst Patche für die Garminsoftware entwickeln. Aber das ist wohl auch eher unwahrscheinlich.
+Wir können dann also nur eins tun: nichts. Bestenfalls kann man versuchen "Workarounds" zu finden. Das würde wohl darauf hinauslaufen, 
+"ungünstige" Höhenanordnungen irgendwie zu vermeiden. Wenn Fehler z.B. im Zusammenhang mit einer "kompliziert" verlaufenden Grenze und den
+damit vorhandenen NoValues auftreten, könnte man den Grenzverlauf vereinfachen. Ich verwende z.B. nicht direkt die Grenzpolygone von geofabrik.de
+sondern gebe immer noch einen Puffer von etwa 2km dazu. Das sieht einfach besser aus.
+
+Wie können wir nun die beiden Fälle unterscheiden? 
+Wir müssen feststellen, ob die angezeigten (!) Höhen korrekt bzw. plausibel sind.
+
+Wie in der PDF beschrieben, verwende ich eine GPX-Datei mit POI's als "Messpunkte". Dann wird mit dem Algorithmus experimentiert und dann 
+nachgesehen, welche Auswirkung das auf den oder die Messpunkte hat. "Gemessen" wird, indem man mit der Maus zu einem Messpunkt geht und dann 
+in der Statusleiste die Höhe abliest. Natürlich muss die Anzeige in Mapsource/Basecamp genauso in Meter oder Fuss erfolgen, wie es in der 
+DEM-Datei definiert ist.
+
+In der Praxis gibt es allerdings einige Hürden. Letztendlich muss die geografische Position eines POI auf eine Pixelposition auf dem Bildschirm
+umgerechnet werden. Es kann deshalb sein, dass schon der POI nicht exakt positioniert ist und bis zu einem halben Pixel neben der korrekten 
+Position liegt. Noch schwieriger ist natürlich die pixelgenaue Positionierung der Maus.
+
+Insbesondere bei großen Höhenunterschieden zwischen 2 Messpunkten hat man deshalb oft leichte Differenzen der Höhenanzeige zur codierten Höhe.
+
+Wie kommt man nun zu einer GPX-Datei mit Messpunkten?
+Man kann z.B. mein kleines Tool GpxMarker4Dem verwenden. Als erstes muss man die betroffene Kartenkachel identifizieren. Im Prinzip muss man nur 
+die betroffene Stelle in Mapsource mit dem Werkzeug "Karte" anklicken. Dann kann man sich den Kartennamen anzeigen lassen. Entweder man kann
+daraus auf die Kachelnummer schließen oder man versucht vielleicht etwa wie: grep -U "text" *.img.
+
+Dann erzeugt man mit 
+
+GpxMarker4Dem -i kachel.img 
+oder
+GpxMarker4Dem -i kachel.dem 
+
+für den Zoomlevel 0 für jedes DEM-Subtile eine GPX-Datei im Verzeichnis gpx.
+
+Daraus muss man sich die passende GPX-Datei für den fehlerhaften Bereich heraussuchen und dann die damit angezeigten Messpunkte überprüfen.
+
